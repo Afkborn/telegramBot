@@ -1,14 +1,15 @@
 
 from os import getcwd
+from re import S
 import sqlite3 as sql # sqlite3 is a module
 
 from python.Model.User import User
-
+from python.Model.Product import Product
 
 
 CREATETABLE_USERS = f"""CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    telegram_id INTEGER ,
+    telegram_id INTEGER,
     is_bot INTEGER,
     username TEXT,
     first_name TEXT,
@@ -16,6 +17,25 @@ CREATETABLE_USERS = f"""CREATE TABLE IF NOT EXISTS users (
     language_code TEXT,
     created_at INTEGER
 );"""
+
+CREATETABLE_URLS = f"""CREATE TABLE IF NOT EXISTS urls (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    url TEXT
+);"""
+
+CREATETABLE_PRODUCT = """CREATE TABLE IF NOT EXISTS products (
+    id	INTEGER PRIMARY KEY,
+    owner_telegram_id INTEGER,
+    isim TEXT NOT NULL,
+    link TEXT NOT NULL,
+    fiyat_takip TEXT NOT NULL, 
+    stok_takip TEXT NOT NULL,
+    fiyat INTEGER NOT NULL,
+    stok TEXT NOT NULL,
+    son_kontrol_zamani INTEGER NOT NULL,
+    created_at INTEGER NOT NULL
+);"""
+
 
 
 class Database():
@@ -29,10 +49,30 @@ class Database():
         self.db = sql.connect(self.dbLoc)
         self.im = self.db.cursor()
         self.im.execute(CREATETABLE_USERS)
+        self.im.execute(CREATETABLE_URLS)
+        self.im.execute(CREATETABLE_PRODUCT)
         self.db.commit()
         self.db.close()
 
+    def addUrl(self, url: str):
+        self.db = sql.connect(self.dbLoc)
+        self.im = self.db.cursor()
+        KEY = f"url"
+        VALUES = f"'{url}'"
+        self.im.execute(f"INSERT INTO urls ({KEY}) VALUES ({VALUES})")
+        last_row_index = self.im.lastrowid
+        self.db.commit()
+        self.db.close()
+        return last_row_index
 
+    def getUrlIndex(self, index: int):
+        self.db = sql.connect(self.dbLoc)
+        self.im = self.db.cursor()
+        self.im.execute(f"SELECT url FROM urls WHERE id = {index}")
+        result = self.im.fetchone()
+        self.db.close()
+        return result[0]
+    
     def addUser(self,user:User):
         self.db = sql.connect(self.dbLoc)
         self.im = self.db.cursor()
@@ -50,7 +90,6 @@ class Database():
         self.db.commit()
         self.db.close()
         
-
     def addUserIfNotExists(self,user:User):
         self.db = sql.connect(self.dbLoc)
         self.im = self.db.cursor()
@@ -94,8 +133,7 @@ class Database():
         result = self.im.fetchall()
         self.db.close()
         return result
-    
-        
+           
     def getUserCount(self) -> int:
         self.db = sql.connect(self.dbLoc)
         self.im = self.db.cursor()
@@ -104,8 +142,24 @@ class Database():
         self.db.close()
         return result[0]
     
-
-    
+    def addProduct(self, product:Product):
+        self.db = sql.connect(self.dbLoc)
+        self.im = self.db.cursor()
+        KEY = f"owner_telegram_id,isim,link,fiyat_takip,stok_takip,fiyat,stok,son_kontrol_zamani,created_at"
+        VALUES = f"""
+        '{product.get_owner_telegram_id()}',
+        '{product.get_isim()}',
+        '{product.get_link()}',
+        '{product.get_fiyat_takip()}',
+        '{product.get_stok_takip()}',
+        '{product.get_fiyat()}',
+        '{product.get_stok()}',
+        '{product.get_son_kontrol_zamani()}',
+        '{product.get_created_at()}'
+        """
+        self.im.execute(f"INSERT INTO products ({KEY}) VALUES ({VALUES})")
+        self.db.commit()
+        self.db.close()
     
 
     
