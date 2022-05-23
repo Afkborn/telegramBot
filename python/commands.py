@@ -1,15 +1,22 @@
 
+from posixpath import split
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CallbackContext, CommandHandler, Updater, CallbackQueryHandler
 from .py_time import *
 from python.Model.User import User
 from python.Model.Product  import Product
 from python.database import Database
+from python.py_time import *
 import time
 import logging 
 
 myDb = Database()
 
+
+def printLog(update: Update, functionName: str):
+    logging.info(f"UID: {update.message.from_user.id} | command: {functionName}")
+    print(f"{get_time_command()} UID: {update.message.from_user.id} | command: {functionName}")
+    
 
 async def start(update: Update, context: CallbackContext.DEFAULT_TYPE):
     if myDb.getUserWithTelegramID(update.message.from_user.id) == None:
@@ -24,18 +31,18 @@ async def start(update: Update, context: CallbackContext.DEFAULT_TYPE):
 async def help(update: Update, context: CallbackContext.DEFAULT_TYPE):
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=f"HELP TEXT"
+        text=f"track -> TEXT\nmyproducts -> TEXT\n "
     )
 
 
 async def callback_handler(update : Update, context : CallbackContext.DEFAULT_TYPE):
     query = update.callback_query
-    process, type, urlID, ownerID = query.data.split(",")
+    process , *_ = query.data.split(",")
     if process == "track":
+        _, type, urlID, ownerID = query.data.split(",")
+        print(type, urlID, ownerID)
         #delete previous message
         await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
-        logging.info("delete previous message")
-        
         productLink = myDb.getUrlIndex(urlID)
         if (type =="stock"):
             productStokTakip = True
@@ -48,18 +55,63 @@ async def callback_handler(update : Update, context : CallbackContext.DEFAULT_TY
             productFiyatTakip = True 
         productIsim = "TODO" #TODO ISIM UNUTMA
         myProduct = Product(owner_telegram_id=int(ownerID), isim=productIsim, link=productLink, fiyat_takip=productFiyatTakip, stok_takip=productStokTakip, created_at=time.time(), fiyat=0,stok=0,son_kontrol_zamani=0)
-        logging.info("created product")
-        print(myProduct)
+        logging.info(f"{ownerID} |created product.")
         myDb.addProduct(myProduct)
-        logging.info("added product")
+        logging.info(f"{ownerID} |added product to database")
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="You are now following this product, you will be notified when it changes.\nYou can check your products with /myproducts")
+        
+    elif process == "myproducts":
+        #delete previous message
+        await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
+        _, type, productID, ownerID = query.data.split(",")
+        myProduct = myDb.getProductWithProductID(productID)
+        buttons = [
+            [InlineKeyboardButton(text="Untrack", callback_data = f"untrack,{productID},{ownerID}")],
+            [InlineKeyboardButton(text="Open", url =f"{myProduct.get_link()}")]
+        ]
+        keyboard = InlineKeyboardMarkup(buttons)
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Product Name: {myProduct.get_isim()}\nPrice: {myProduct.get_fiyat()}, Stock: {myProduct.get_stok_string()}, Tracking type: {myProduct.get_type()}", reply_markup = keyboard)
+    elif process == "untrack":
+        #delete previous message
+        await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
+        _, productID, ownerID = query.data.split(",")
+        if (myDb.deleteProductWithID(productID)):
+            await context.bot.send_message(chat_id=update.effective_chat.id, text="You are no longer following this product, you will not be notified when it changes.\nYou can check your products with /myproducts")
+        else:
+            await context.bot.send_message(chat_id=update.effective_chat.id, text="Error")
+    else:
+        print(process)
+
+async def myproducts(update: Update, context: CallbackContext.DEFAULT_TYPE):
+    printLog(update, "myproducts")
+    user = myDb.getUserWithTelegramID(update.message.from_user.id)
+    if  user == None:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="You are not registered. Please, type /start")
+    else:
+        products = myDb.getProductWithUser(user)
+        buttons = []
+        for product in products:
+            if (product.get_fiyat_takip() and product.get_stok_takip()):
+                type = "all"
+            elif (product.get_fiyat_takip()):
+                type = "price"
+            else:
+                type = "stock"
+                
+            buttons.append(
+                [InlineKeyboardButton(text=product.get_isim(), callback_data = f"myproducts,{type},{product.get_id()},{update.message.from_user.id}")]
+            )
+        keyboard = InlineKeyboardMarkup(buttons)
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="Choose a product to track", reply_markup = keyboard)
+        
 
 async def track(update: Update, context: CallbackContext.DEFAULT_TYPE):
+    printLog(update, "track")
     user = myDb.getUserWithTelegramID(update.message.from_user.id)
     if  user == None:
         await context.bot.send_message(chat_id=update.effective_chat.id, text="You are not registered. Please, type /start")
     else:
         url = (update.message.text).replace("/track ","")
-        print(len(url))
         if (len(url) <= 6) or not ( url.startswith("http://") or url.startswith("https://")):
             await context.bot.send_message(chat_id=update.effective_chat.id, text="You need to provide URL")    
         else:
@@ -72,7 +124,7 @@ async def track(update: Update, context: CallbackContext.DEFAULT_TYPE):
             keyboard = InlineKeyboardMarkup(buttons)
             await context.bot.send_message(chat_id= update.effective_chat.id,text = 'What would you like to follow?', reply_markup = keyboard)
                                 
-        
+
 async def echo(update: Update, context: CallbackContext.DEFAULT_TYPE):
     print(f"{get_time_command()} - ID:{update.message.from_user.id} | {update.message.text}")
     #await context.bot.send_message(chat_id=update.effective_chat.id, text=update.message.text)

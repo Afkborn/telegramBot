@@ -1,4 +1,3 @@
-from this import d
 
 
 class Product:
@@ -48,11 +47,22 @@ class Product:
         if (self.__stok):
             return 1
         return 0
+    def get_stok_string(self):
+        if (self.__stok):
+            return "✅"
+        return "❌"
     def get_son_kontrol_zamani(self):
         return self.__son_kontrol_zamani
     def get_created_at(self):
         return self.__created_at
-
+    def get_type(self):
+        if (self.__fiyat_takip and self.__stok_takip):
+            return "Stock and Price"
+        elif (self.__fiyat_takip):
+            return "Price"
+        else:
+            return "Stock"
+        
         
 
     def set_id(self,id):

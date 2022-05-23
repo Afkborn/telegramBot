@@ -161,5 +161,37 @@ class Database():
         self.db.commit()
         self.db.close()
     
-
+    def getProductWithUser(self, user : User) -> list[Product]:
+        self.db = sql.connect(self.dbLoc)
+        self.im = self.db.cursor()
+        self.im.execute(f"SELECT * FROM products WHERE owner_telegram_id = '{user.get_telegram_id()}'")
+        results = self.im.fetchall()
+        productList = []
+        for result in results:
+            id, owner_telegram_id, isim, link, fiyat_takip, stok_takip, fiyat, stok, son_kontrol_zamani, created_at = result
+            myResult = Product(id=id,owner_telegram_id=owner_telegram_id,isim=isim,link=link,fiyat_takip=fiyat_takip,stok_takip=stok_takip,fiyat=fiyat,stok=stok,son_kontrol_zamani=son_kontrol_zamani,created_at=created_at)
+            productList.append(myResult)
+        self.im.close()
+        self.db.close()
+        return productList   
+    def getProductWithProductID(self, ID:int ) -> Product:
+        self.db = sql.connect(self.dbLoc)
+        self.im = self.db.cursor()
+        self.im.execute(f"SELECT * FROM products WHERE id = '{ID}'")
+        result = self.im.fetchone()
+        id, owner_telegram_id, isim, link, fiyat_takip, stok_takip, fiyat, stok, son_kontrol_zamani, created_at = result
+        myProduct = Product(id=id,owner_telegram_id=owner_telegram_id,isim=isim,link=link,fiyat_takip=fiyat_takip,stok_takip=stok_takip,fiyat=fiyat,stok=stok,son_kontrol_zamani=son_kontrol_zamani,created_at=created_at)
+        self.im.close()
+        self.db.close()
+        return myProduct
+    
+    def deleteProductWithID(self, ID:int) -> bool:
+        self.db = sql.connect(self.dbLoc)
+        self.im = self.db.cursor()
+        self.im.execute(f"DELETE FROM products WHERE id = '{ID}'")
+        self.db.commit()
+        self.im.close()
+        self.db.close()
+        return True
+    
     
