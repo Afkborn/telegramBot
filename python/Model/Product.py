@@ -20,7 +20,7 @@ class Product:
         self.__fiyat_takip = fiyat_takip
         self.__stok_takip = stok_takip
         self.__fiyat = fiyat
-        self.__stok = stok
+        self.__stok = int(stok)
         self.__son_kontrol_zamani = son_kontrol_zamani
         self.__created_at = created_at
 

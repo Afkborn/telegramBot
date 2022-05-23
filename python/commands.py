@@ -22,6 +22,8 @@ async def start(update: Update, context: CallbackContext.DEFAULT_TYPE):
     if myDb.getUserWithTelegramID(update.message.from_user.id) == None:
         user = User(telegram_id=update.message.from_user.id, is_bot=update.message.from_user.is_bot, username=update.message.from_user.username, first_name=update.message.from_user.first_name, last_name=update.message.from_user.last_name, language_code=update.message.from_user.language_code, created_at=time.time())
         myDb.addUser(user)
+        logging.info(f"UID: {update.message.from_user.id} | created user, name: {user.get_username()}.")
+        print(f"{get_time_command()} UID: {update.message.from_user.id} | created user, name: {user.get_username()}.")
     
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
@@ -40,7 +42,6 @@ async def callback_handler(update : Update, context : CallbackContext.DEFAULT_TY
     process , *_ = query.data.split(",")
     if process == "track":
         _, type, urlID, ownerID = query.data.split(",")
-        print(type, urlID, ownerID)
         #delete previous message
         await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
         productLink = myDb.getUrlIndex(urlID)
@@ -53,11 +54,14 @@ async def callback_handler(update : Update, context : CallbackContext.DEFAULT_TY
         else:
             productStokTakip = True
             productFiyatTakip = True 
+            
         productIsim = "TODO" #TODO ISIM UNUTMA
         myProduct = Product(owner_telegram_id=int(ownerID), isim=productIsim, link=productLink, fiyat_takip=productFiyatTakip, stok_takip=productStokTakip, created_at=time.time(), fiyat=0,stok=0,son_kontrol_zamani=0)
         logging.info(f"{ownerID} |created product.")
+        
         myDb.addProduct(myProduct)
         logging.info(f"{ownerID} |added product to database")
+        print(f"{get_time_command()} UID:{ownerID} |added product.")
         await context.bot.send_message(chat_id=update.effective_chat.id, text="You are now following this product, you will be notified when it changes.\nYou can check your products with /myproducts")
         
     elif process == "myproducts":
@@ -76,11 +80,14 @@ async def callback_handler(update : Update, context : CallbackContext.DEFAULT_TY
         await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
         _, productID, ownerID = query.data.split(",")
         if (myDb.deleteProductWithID(productID)):
+            print(f"{get_time_command()} UID:{ownerID} |deleted product, productID:{productID}")
+            logging.info(f"{ownerID} |deleted product, productID: {productID}")
             await context.bot.send_message(chat_id=update.effective_chat.id, text="You are no longer following this product, you will not be notified when it changes.\nYou can check your products with /myproducts")
         else:
             await context.bot.send_message(chat_id=update.effective_chat.id, text="Error")
     else:
         print(process)
+
 
 async def myproducts(update: Update, context: CallbackContext.DEFAULT_TYPE):
     printLog(update, "myproducts")
