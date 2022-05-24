@@ -1,4 +1,5 @@
 
+from urllib.parse import urlparse
 
 class Product:
     def __init__(self,
@@ -62,7 +63,9 @@ class Product:
             return "Price"
         else:
             return "Stock"
-        
+    
+    def get_domain(self):
+        return ".".join(urlparse(self.get_link()).netloc.split('.')[0:])
         
 
     def set_id(self,id):
@@ -77,7 +80,7 @@ class Product:
         self.__fiyat_takip = fiyat_takip
     def set_stok_takip(self,stok_takip):
         self.__stok_takip = stok_takip
-    def set_fiyat(self,fiyat):
+    def set_fiyat(self,fiyat : int):
         self.__fiyat = fiyat
     def set_stok(self,stok):
         self.__stok = stok

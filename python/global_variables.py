@@ -3,8 +3,9 @@ FOLDERS_NAME = ["log","db"]
 
 
 TELEGRAM_TOKEN = "5329701490:AAE7VGvqxI4q82RipRd-j1pNXBSMDreO71o"
+ADMIN_ID = "1149095348"
 
 
 
 
-
+SUPPORTED_DOMAIN = ['www.amazon.com.tr']

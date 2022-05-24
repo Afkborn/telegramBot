@@ -1,7 +1,7 @@
 
-from os import getcwd
-from re import S
-import sqlite3 as sql # sqlite3 is a module
+
+import sqlite3 as sql
+from time import time 
 
 from python.Model.User import User
 from python.Model.Product import Product
@@ -30,12 +30,18 @@ CREATETABLE_PRODUCT = """CREATE TABLE IF NOT EXISTS products (
     link TEXT NOT NULL,
     fiyat_takip TEXT NOT NULL, 
     stok_takip TEXT NOT NULL,
-    fiyat INTEGER NOT NULL,
+    fiyat REAL NOT NULL,
     stok TEXT NOT NULL,
-    son_kontrol_zamani INTEGER NOT NULL,
-    created_at INTEGER NOT NULL
+    son_kontrol_zamani REAL NOT NULL,
+    created_at REAL NOT NULL
 );"""
 
+CREATETABLE_PRICES = """CREATE TABLE IF NOT EXISTS prices (
+    id INTEGER PRIMARY KEY,
+    product_id INTEGER NOT NULL,
+    fiyat REAL NOT NULL,
+    time REAL NOT NULL)
+;"""
 
 
 class Database():
@@ -51,6 +57,7 @@ class Database():
         self.im.execute(CREATETABLE_USERS)
         self.im.execute(CREATETABLE_URLS)
         self.im.execute(CREATETABLE_PRODUCT)
+        self.im.execute(CREATETABLE_PRICES)
         self.db.commit()
         self.db.close()
 
@@ -158,9 +165,35 @@ class Database():
         '{product.get_created_at()}'
         """
         self.im.execute(f"INSERT INTO products ({KEY}) VALUES ({VALUES})")
+        last_row_index = self.im.lastrowid
+        product.set_id(last_row_index)
+        self.db.commit()
+        self.db.close()
+        self.addPrice(product)
+        return product 
+    
+    def addPrice(self, product:Product):
+        self.db = sql.connect(self.dbLoc)
+        self.im = self.db.cursor()
+        KEY = f"product_id,fiyat,time"
+        VALUES = f"""
+        '{product.get_id()}',
+        '{product.get_fiyat()}',
+        '{time()}'
+        """    
+        self.im.execute(f"INSERT INTO prices ({KEY}) VALUES ({VALUES})")
         self.db.commit()
         self.db.close()
     
+    def updateProductPrice(self, product:Product, price : float):
+        self.db = sql.connect(self.dbLoc)
+        self.im = self.db.cursor()
+        self.im.execute(f"UPDATE products SET fiyat = '{price}' WHERE id = '{product.get_id()}'")
+        self.db.commit()
+        self.db.close()
+        self.addPrice(product,price)
+        
+        
     def getProductWithUser(self, user : User) -> list[Product]:
         self.db = sql.connect(self.dbLoc)
         self.im = self.db.cursor()
@@ -174,6 +207,7 @@ class Database():
         self.im.close()
         self.db.close()
         return productList   
+    
     def getProductWithProductID(self, ID:int ) -> Product:
         self.db = sql.connect(self.dbLoc)
         self.im = self.db.cursor()
@@ -193,5 +227,35 @@ class Database():
         self.im.close()
         self.db.close()
         return True
+
+    def getAllProduct(self) -> list[Product]:
+        self.db = sql.connect(self.dbLoc)
+        self.im = self.db.cursor()
+        self.im.execute(f"SELECT * FROM products")
+        results = self.im.fetchall()
+        productList = []
+        for result in results:
+            id, owner_telegram_id, isim, link, fiyat_takip, stok_takip, fiyat, stok, son_kontrol_zamani, created_at = result
+            myResult = Product(id=id,owner_telegram_id=owner_telegram_id,isim=isim,link=link,fiyat_takip=fiyat_takip,stok_takip=stok_takip,fiyat=fiyat,stok=stok,son_kontrol_zamani=son_kontrol_zamani,created_at=created_at)
+            productList.append(myResult)
+        self.im.close()
+        self.db.close()
+        return productList    
     
+    # def updatePriceFromProduct(self, product:Product):
+    #     self.db = sql.connect(self.dbLoc)
+    #     self.im = self.db.cursor()
+    #     self.im.execute(f"UPDATE products SET fiyat = '{product.get_fiyat()}' WHERE id = '{product.get_id()}'")
+    #     self.db.commit()
+    #     self.im.close()
+    #     self.db.close()
+    def updatePriceAndSonKontrolZamaniFromProduct(self, product:Product):
+        self.db = sql.connect(self.dbLoc)
+        self.im = self.db.cursor()
+        self.im.execute(f"UPDATE products SET fiyat = '{product.get_fiyat()}', son_kontrol_zamani = '{product.get_son_kontrol_zamani()}' WHERE id = '{product.get_id()}'")
+        self.db.commit()
+        self.im.close()
+        self.db.close()
+
+
     
