@@ -85,7 +85,11 @@ async def callback_handler(update : Update, context : CallbackContext.DEFAULT_TY
             [InlineKeyboardButton(text="Open", url =f"{myProduct.get_link()}")]
         ]
         keyboard = InlineKeyboardMarkup(buttons)
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Product Name: {myProduct.get_isim()}\nPrice: {myProduct.get_fiyat()}, Stock: {myProduct.get_stok_string()}, Tracking type: {myProduct.get_type()}", reply_markup = keyboard)
+        if (myProduct.get_isim() == "TODO"):
+            isim = "Getting name, please wait..."
+        else:
+            isim = myProduct.get_isim()
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Product Name: {isim}\nPrice: {myProduct.get_fiyat()}, Stock: {myProduct.get_stok_string()}, Tracking type: {myProduct.get_type()}", reply_markup = keyboard)
         
     elif process == "untrack":
         #delete previous message
@@ -118,8 +122,13 @@ async def myproducts(update: Update, context: CallbackContext.DEFAULT_TYPE):
             else:
                 type = "stock"
                 
+            if (product.get_isim() == "TODO"):
+                isim = "Getting name, please wait..."
+            else:
+                isim = product.get_isim()
+                
             buttons.append(
-                [InlineKeyboardButton(text=product.get_isim(), callback_data = f"myproducts,{type},{product.get_id()},{update.message.from_user.id}")]
+                [InlineKeyboardButton(text=isim, callback_data = f"myproducts,{type},{product.get_id()},{update.message.from_user.id}")]
             )
         keyboard = InlineKeyboardMarkup(buttons)
         await context.bot.send_message(chat_id=update.effective_chat.id, text="Choose a product to track", reply_markup = keyboard)

@@ -236,6 +236,9 @@ class Database():
         productList = []
         for result in results:
             id, owner_telegram_id, isim, link, fiyat_takip, stok_takip, fiyat, stok, son_kontrol_zamani, created_at = result
+            fiyat = float(fiyat)
+            son_kontrol_zamani = float(son_kontrol_zamani)
+            created_at = float(created_at)
             myResult = Product(id=id,owner_telegram_id=owner_telegram_id,isim=isim,link=link,fiyat_takip=fiyat_takip,stok_takip=stok_takip,fiyat=fiyat,stok=stok,son_kontrol_zamani=son_kontrol_zamani,created_at=created_at)
             productList.append(myResult)
         self.im.close()
@@ -249,13 +252,26 @@ class Database():
     #     self.db.commit()
     #     self.im.close()
     #     self.db.close()
-    def updatePriceAndSonKontrolZamaniFromProduct(self, product:Product):
+    def updatePriceAndStokFromProduct(self, product:Product):
         self.db = sql.connect(self.dbLoc)
         self.im = self.db.cursor()
-        self.im.execute(f"UPDATE products SET fiyat = '{product.get_fiyat()}', son_kontrol_zamani = '{product.get_son_kontrol_zamani()}' WHERE id = '{product.get_id()}'")
+        self.im.execute(f"UPDATE products SET fiyat = '{product.get_fiyat()}', stok = '{product.get_stok()}' WHERE id = '{product.get_id()}'")
         self.db.commit()
         self.im.close()
         self.db.close()
-
+    def updateSonKontrolZamaniProduct(self,product:Product):
+        self.db = sql.connect(self.dbLoc)
+        self.im = self.db.cursor()
+        self.im.execute(f"UPDATE products SET son_kontrol_zamani = '{product.get_son_kontrol_zamani()}' WHERE id = '{product.get_id()}'")
+        self.db.commit()
+        self.im.close()
+        self.db.close()
+    def updateIsimProduct(self,product:Product):
+        self.db = sql.connect(self.dbLoc)
+        self.im = self.db.cursor()
+        self.im.execute(f"UPDATE products SET isim = '{product.get_isim()}' WHERE id = '{product.get_id()}'")
+        self.db.commit()
+        self.im.close()
+        self.db.close()
 
     

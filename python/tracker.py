@@ -39,7 +39,7 @@ class Tracker():
         
     def getControlSleepTime(self):
         # Kontrol edilmesi gereken ürünleri bulurken bekleyeceği süre, buradaki amaç her saniye hangi ürünün kontrülünü yapılacağını görmenin gereksiz olacağından kaynaklı
-        self.controlSleepTime = 60
+        self.controlSleepTime = 20
           
     def getProductsToFollow(self):
         self.updateProductList()
@@ -72,8 +72,11 @@ class Tracker():
         with sync_playwright() as p:
             browser = p.chromium.launch()
             page = browser.new_page()
-    
+
             if (product.get_domain() == SUPPORTED_DOMAIN[0]): # amazon.com.tr
+                if (product.get_isim() == "TODO"):
+                    self.getNameFromAmazon(page, product)
+                    
                 self.getPriceAndStockFromAmazon(page, product)
             else:
                 print("Bu ürünün kontrolü henüz desteklenmiyor.")
@@ -90,19 +93,43 @@ class Tracker():
                     self.trackProduct(product)
                 self.lastTrackTime = time.time()
                 time.sleep(self.controlSleepTime)
-                
+              
+    def getNameFromAmazon(self, page : Page, product : Product) -> str:
+        page.goto(product.get_link())
+        productTitle = page.query_selector("span[id='productTitle']").inner_text()
+        
+        #sql banned chracter delete
+        productTitle = productTitle.replace("'", "")
+        productTitle = productTitle.replace("\"", "")
+        productTitle = productTitle.replace("\\", "")
+        productTitle = productTitle.replace("/", "")
+        productTitle = productTitle.replace("*", "")
+        productTitle = productTitle.replace("?", "")
+        productTitle = productTitle.replace("<", "")
+        productTitle = productTitle.replace(">", "")
+        productTitle = productTitle.replace("|", "")
+        
+        product.set_isim(productTitle)
+        myDb.updateIsimProduct(product)
+        return productTitle
+      
     def getPriceAndStockFromAmazon(self, page :Page, product : Product) -> None:
             page.goto(product.get_link()) # amazon.com.tr ürünün linkini açar
             corePrice_element = page.query_selector("div[id^='corePrice_']")
             fiyat = corePrice_element.query_selector('span[class="a-offscreen"]').inner_text()
             fiyat = self.clearFiyat(fiyat=fiyat)
+            product.set_son_kontrol_zamani(time.time())
+            
+            product.set_stok(True) #TODO DÜZELT.
+            
             if (product.get_fiyat() != fiyat):
                 product.set_fiyat(fiyat)
-                product.set_son_kontrol_zamani(time.time())
-                self.sendMessage(product.get_owner_telegram_id(), f"{product.get_isim()} ürününün fiyatı değişti.\nYeni Fiyat: {product.get_fiyat()}")
-                print(f" {get_time_command()} | {product.get_isim()} ürününün fiyatı değişti.\nYeni Fiyat: {product.get_fiyat()}")
+                self.sendMessage(product.get_owner_telegram_id(), f"{product.get_isim()} ürününün fiyatı değişti, yeni Fiyat: {product.get_fiyat()}")
+                print(f" {get_time_command()} | {product.get_isim()} ürününün fiyatı değişti, yeni fiyat: {product.get_fiyat()}")
                 myDb.addPrice(product)
-                myDb.updatePriceAndSonKontrolZamaniFromProduct(product)
+                myDb.updatePriceAndStokFromProduct(product)
             else:
                 print(f" {get_time_command()} | ID: {product.get_id()} {product.get_isim()} ürününün fiyatı değişmedi.")
                 logging.info(f" ID: {product.get_id()} {product.get_isim()} ürününün fiyatı değişmedi.")
+                
+            myDb.updateSonKontrolZamaniProduct(product)
