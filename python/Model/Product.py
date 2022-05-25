@@ -16,16 +16,16 @@ class Product:
     ) -> None:
         
         self.__id = id
-        self.__owner_telegram_id = owner_telegram_id
+        self.__owner_telegram_id = int(owner_telegram_id)
         self.__isim = isim
         self.__link = link
-        self.__fiyat_takip = fiyat_takip
-        self.__stok_takip = stok_takip
-        self.__fiyat = fiyat
+        self.__fiyat_takip = int(fiyat_takip)
+        self.__stok_takip = int(stok_takip)
+        self.__fiyat = float(fiyat)
         self.__stok = int(stok)
-        self.__son_kontrol_zamani = son_kontrol_zamani
-        self.__created_at = created_at
-        self.__birim_id = birim_id
+        self.__son_kontrol_zamani = float(son_kontrol_zamani)
+        self.__created_at = float(created_at)
+        self.__birim_id = int(birim_id)
         
 
     def get_id(self):

@@ -22,6 +22,7 @@ class Database():
         self.im.execute(CREATETABLE_PRODUCT)
         self.im.execute(CREATETABLE_PRICES)
         self.im.execute(CREATETABLE_BIRIM)
+        self.checkDefaultBirim()
         self.db.commit()
         self.db.close()
 
@@ -64,11 +65,33 @@ class Database():
     def checkDefaultBirim(self):
         self.db = sql.connect(self.dbLoc)
         self.im = self.db.cursor()
-        self.im.execute(f"SELECT * FROM birim WHERE id = 1")
+        self.im.execute(f"SELECT * FROM birimler WHERE id = 1")
         result = self.im.fetchone()
         if result == None:
             self.addDefaultBirim()
         return True
+    
+    def getBirimFromSimge(self, simge:str) -> str:
+        self.db = sql.connect(self.dbLoc)
+        self.im = self.db.cursor()
+        self.im.execute(f"SELECT * FROM birimler WHERE simge = '{simge}'")
+        result = self.im.fetchone()
+        if result == None:
+            return None
+        id,birim,simge = result
+        self.db.close()
+        return id,birim,simge
+    
+    def getSimgeFromID(self, id : int) -> str:
+        self.db = sql.connect(self.dbLoc)
+        self.im = self.db.cursor()
+        self.im.execute(f"SELECT * FROM birimler WHERE id = {id}")
+        result = self.im.fetchone()
+        if result == None:
+            return None
+        _ ,_, simge = result
+        self.db.close()
+        return simge
     
     def addDefaultBirim(self):
         self.db = sql.connect(self.dbLoc)
@@ -78,10 +101,24 @@ class Database():
         ' ',
         ' '
         """
-        self.im.execute(f"INSERT INTO birim ({KEY}) VALUES ({VALUES})")
+        self.im.execute(f"INSERT INTO birimler ({KEY}) VALUES ({VALUES})")
         self.db.commit()
         self.db.close()    
-        
+    
+    def addBirim(self, birim:str, simge:str):
+        self.db = sql.connect(self.dbLoc)
+        self.im = self.db.cursor()
+        KEY = f"birim,simge"
+        VALUES = f"""
+        '{birim}',
+        '{simge}'
+        """
+        self.im.execute(f"INSERT INTO birimler ({KEY}) VALUES ({VALUES})")
+        last_insert_rowid = self.im.lastrowid
+        self.db.commit()
+        self.db.close()
+        return last_insert_rowid
+    
     def addUserIfNotExists(self,user:User):
         self.db = sql.connect(self.dbLoc)
         self.im = self.db.cursor()
@@ -137,7 +174,7 @@ class Database():
     def addProduct(self, product:Product):
         self.db = sql.connect(self.dbLoc)
         self.im = self.db.cursor()
-        KEY = f"owner_telegram_id,isim,link,fiyat_takip,stok_takip,fiyat,stok,son_kontrol_zamani,created_at"
+        KEY = f"owner_telegram_id,isim,link,fiyat_takip,stok_takip,fiyat,stok,son_kontrol_zamani,created_at,birim_id"
         VALUES = f"""
         '{product.get_owner_telegram_id()}',
         '{product.get_isim()}',
@@ -147,7 +184,8 @@ class Database():
         '{product.get_fiyat()}',
         '{product.get_stok()}',
         '{product.get_son_kontrol_zamani()}',
-        '{product.get_created_at()}'
+        '{product.get_created_at()}',
+        '{product.get_birim_id()}'
         """
         self.im.execute(f"INSERT INTO products ({KEY}) VALUES ({VALUES})")
         last_row_index = self.im.lastrowid
@@ -185,8 +223,8 @@ class Database():
         results = self.im.fetchall()
         productList = []
         for result in results:
-            id, owner_telegram_id, isim, link, fiyat_takip, stok_takip, fiyat, stok, son_kontrol_zamani, created_at = result
-            myResult = Product(id=id,owner_telegram_id=owner_telegram_id,isim=isim,link=link,fiyat_takip=fiyat_takip,stok_takip=stok_takip,fiyat=fiyat,stok=stok,son_kontrol_zamani=son_kontrol_zamani,created_at=created_at)
+            id, owner_telegram_id, isim, link, fiyat_takip, stok_takip, fiyat, stok, son_kontrol_zamani, created_at, birim_id = result
+            myResult = Product(id=id,owner_telegram_id=owner_telegram_id,isim=isim,link=link,fiyat_takip=fiyat_takip,stok_takip=stok_takip,fiyat=fiyat,stok=stok,son_kontrol_zamani=son_kontrol_zamani,created_at=created_at,birim_id=birim_id)
             productList.append(myResult)
         self.im.close()
         self.db.close()
@@ -197,8 +235,8 @@ class Database():
         self.im = self.db.cursor()
         self.im.execute(f"SELECT * FROM products WHERE id = '{ID}'")
         result = self.im.fetchone()
-        id, owner_telegram_id, isim, link, fiyat_takip, stok_takip, fiyat, stok, son_kontrol_zamani, created_at = result
-        myProduct = Product(id=id,owner_telegram_id=owner_telegram_id,isim=isim,link=link,fiyat_takip=fiyat_takip,stok_takip=stok_takip,fiyat=fiyat,stok=stok,son_kontrol_zamani=son_kontrol_zamani,created_at=created_at)
+        id, owner_telegram_id, isim, link, fiyat_takip, stok_takip, fiyat, stok, son_kontrol_zamani, created_at, birim_id = result
+        myProduct = Product(id=id,owner_telegram_id=owner_telegram_id,isim=isim,link=link,fiyat_takip=fiyat_takip,stok_takip=stok_takip,fiyat=fiyat,stok=stok,son_kontrol_zamani=son_kontrol_zamani,created_at=created_at,birim_id=birim_id)
         self.im.close()
         self.db.close()
         return myProduct
@@ -219,11 +257,8 @@ class Database():
         results = self.im.fetchall()
         productList = []
         for result in results:
-            id, owner_telegram_id, isim, link, fiyat_takip, stok_takip, fiyat, stok, son_kontrol_zamani, created_at = result
-            fiyat = float(fiyat)
-            son_kontrol_zamani = float(son_kontrol_zamani)
-            created_at = float(created_at)
-            myResult = Product(id=id,owner_telegram_id=owner_telegram_id,isim=isim,link=link,fiyat_takip=fiyat_takip,stok_takip=stok_takip,fiyat=fiyat,stok=stok,son_kontrol_zamani=son_kontrol_zamani,created_at=created_at)
+            id, owner_telegram_id, isim, link, fiyat_takip, stok_takip, fiyat, stok, son_kontrol_zamani, created_at, birim_id = result
+            myResult = Product(id=id,owner_telegram_id=owner_telegram_id,isim=isim,link=link,fiyat_takip=fiyat_takip,stok_takip=stok_takip,fiyat=fiyat,stok=stok,son_kontrol_zamani=son_kontrol_zamani,created_at=created_at,birim_id=birim_id)
             productList.append(myResult)
         self.im.close()
         self.db.close()
@@ -249,6 +284,14 @@ class Database():
         self.db = sql.connect(self.dbLoc)
         self.im = self.db.cursor()
         self.im.execute(f"UPDATE products SET isim = '{product.get_isim()}' WHERE id = '{product.get_id()}'")
+        self.db.commit()
+        self.im.close()
+        self.db.close()
+        
+    def updateBirimIDProduct(self,product:Product):
+        self.db = sql.connect(self.dbLoc)
+        self.im = self.db.cursor()
+        self.im.execute(f"UPDATE products SET birim_id = '{product.get_birim_id()}' WHERE id = '{product.get_id()}'")
         self.db.commit()
         self.im.close()
         self.db.close()

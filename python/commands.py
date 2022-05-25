@@ -48,7 +48,6 @@ async def help(update: Update, context: CallbackContext.DEFAULT_TYPE):
 async def callback_handler(update : Update, context : CallbackContext.DEFAULT_TYPE):
     query = update.callback_query
     process , *_ = query.data.split(",")
-    print(process)
     if process == "track":
         _, type, urlID, ownerID = query.data.split(",")
         #delete previous message
@@ -102,7 +101,11 @@ async def callback_handler(update : Update, context : CallbackContext.DEFAULT_TY
             isim = "Getting name, please wait..."
         else:
             isim = myProduct.get_isim()
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Product Name: {isim}\nPrice: {myProduct.get_fiyat()}, Stock: {myProduct.get_stok_string()}, Tracking type: {myProduct.get_type()}", reply_markup = keyboard)
+        if (myProduct.get_birim_id() == 1):
+            birim = ""
+        else:
+            birim = myDb.getSimgeFromID(myProduct.get_birim_id())
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Product Name: {isim}\nPrice: {myProduct.get_fiyat()} {birim}, Stock: {myProduct.get_stok_string()}, Tracking type: {myProduct.get_type()}", reply_markup = keyboard)
         
     elif process == "untrack":
         #delete previous message

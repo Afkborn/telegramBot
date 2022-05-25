@@ -1,4 +1,4 @@
-from math import prod
+
 from python.Model.Product import Product
 from python.database import Database
 from python.global_variables import BIRIMLER
@@ -62,9 +62,19 @@ class Tracker():
         requests.get(url)
     
     def clearFiyat(self,fiyat:str) -> int:
+        fiyatBirim = None
+        for birim in BIRIMLER:
+            if birim in fiyat:
+                fiyatBirim = birim
+        
         for birim in BIRIMLER:
             fiyat = fiyat.replace(birim,"")
-        fiyat = float(fiyat.replace(".", "").replace(",", "."))
+        
+        if fiyatBirim == "TL":
+            fiyat = float(fiyat.replace(".", "").replace(",", "."))
+        else:
+            fiyat = float(fiyat)
+            
         return fiyat
     
 
@@ -116,23 +126,41 @@ class Tracker():
         return productTitle
 
     def getBirimFromText(self,fiyat:str):
-        pass
+        for simge in BIRIMLER:
+            if simge in fiyat:
+                print(f" {get_time_command()} | Birim bulundu: {simge}")
+                result = myDb.getBirimFromSimge(simge)
+                if (result == None):
+                    birimID = myDb.addBirim(birim="TODO", simge=simge)
+                    return birimID
+                else:
+                    idDb, birimDb, simgeDb = result
+                    return idDb
+                
+        
     
     def getPriceAndStockFromAmazon(self, page :Page, product : Product) -> None:
             page.goto(product.get_link()) # amazon.com.tr ürünün linkini açar
             corePrice_element = page.query_selector("div[id^='corePrice_']")
             fiyat = corePrice_element.query_selector('span[class="a-offscreen"]').inner_text()
             if (product.get_birim_id() == 1):
-                self.getBirimFromText(fiyat)
+                productBirim = self.getBirimFromText(fiyat)
+                product.set_birim_id(productBirim)
+                myDb.updateBirimIDProduct(product)
             fiyat = self.clearFiyat(fiyat=fiyat)
             product.set_son_kontrol_zamani(time.time())
             
             product.set_stok(True) #TODO DÜZELT.
             
+            
             if (product.get_fiyat() != fiyat):
                 product.set_fiyat(fiyat)
-                self.sendMessage(product.get_owner_telegram_id(), f"{product.get_isim()} ürününün fiyatı değişti, yeni Fiyat: {product.get_fiyat()}")
-                print(f" {get_time_command()} | {product.get_isim()} ürününün fiyatı değişti, yeni fiyat: {product.get_fiyat()}")
+                if (product.get_birim_id() == 1):
+                    birim = ""
+                else:
+                    birim = myDb.getSimgeFromID(product.get_birim_id())
+                self.sendMessage(product.get_owner_telegram_id(), f"{product.get_isim()} ürününün fiyatı değişti, yeni fiyat: {product.get_fiyat()}{birim}")
+                print(f" {get_time_command()} | {product.get_isim()} ürününün fiyatı değişti, yeni fiyat: {product.get_fiyat()}{birim}")
                 myDb.addPrice(product)
                 myDb.updatePriceAndStokFromProduct(product)
             else:
