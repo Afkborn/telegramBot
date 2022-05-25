@@ -10,7 +10,12 @@ import logging
 from telegram.ext import ApplicationBuilder, CommandHandler, filters, MessageHandler, CallbackQueryHandler
 
 from threading import Thread
-from python.token import *
+try:
+    from python.token import *
+except ImportError:
+    print("Token file is not found. Please create it in python/token.py and print your token as TELEGRAM_TOKEN = 'XXXXXXXXXXXX'")
+    logging.error("Token file is not found. Please create it.")
+    exit()
 
 myTracker = Tracker()
 
