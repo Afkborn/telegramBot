@@ -1,6 +1,3 @@
-
-
-
 from python.compatibility import *
 from python.py_logging import *
 from python.global_variables import *
@@ -13,7 +10,7 @@ import logging
 from telegram.ext import ApplicationBuilder, CommandHandler, filters, MessageHandler, CallbackQueryHandler
 
 from threading import Thread
-
+from python.token import *
 
 myTracker = Tracker()
 
@@ -68,10 +65,10 @@ if __name__  == "__main__":
         tracker.start()
         logging.info("Tracker thread started")
         
-        
         logging.info("Start polling")
         print(f" {get_time_command()} | Running...")
         application.run_polling(stop_signals=None)
+        
     else:
         print(f" {get_time_command()} | Compatibility check failed, check log file.")
     

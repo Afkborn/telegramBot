@@ -1,8 +1,6 @@
 
-from matplotlib.patches import FancyArrow
 from .global_variables import *
 from os import path, makedirs
-
 import logging
 
 def createFolder():

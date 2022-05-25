@@ -1,17 +1,15 @@
 
-from posixpath import split
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CallbackContext, CommandHandler, Updater, CallbackQueryHandler
-
+from telegram.ext import CallbackContext
 from python.global_variables import SUPPORTED_DOMAIN
 from .py_time import *
 from python.Model.User import User
 from python.Model.Product  import Product
 from python.database import Database
 from python.py_time import *
+from python.token import *
 import time
 import logging 
-from playwright.sync_api import sync_playwright
 
 myDb = Database()
 
@@ -75,7 +73,8 @@ async def callback_handler(update : Update, context : CallbackContext.DEFAULT_TY
                             created_at=time.time(),
                             fiyat=0,
                             stok=0,
-                            son_kontrol_zamani=0
+                            son_kontrol_zamani=0,
+                            birim_id=1,
                             )
         logging.info(f"{ownerID} | created product.")
         if myProduct.get_domain() in SUPPORTED_DOMAIN:

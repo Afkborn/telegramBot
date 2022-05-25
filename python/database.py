@@ -1,47 +1,10 @@
-
-
 import sqlite3 as sql
 from time import time 
 
 from python.Model.User import User
 from python.Model.Product import Product
+from python.global_variables import *
 
-
-CREATETABLE_USERS = f"""CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    telegram_id INTEGER,
-    is_bot INTEGER,
-    username TEXT,
-    first_name TEXT,
-    last_name TEXT,
-    language_code TEXT,
-    created_at INTEGER
-);"""
-
-CREATETABLE_URLS = f"""CREATE TABLE IF NOT EXISTS urls (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    url TEXT
-);"""
-
-CREATETABLE_PRODUCT = """CREATE TABLE IF NOT EXISTS products (
-    id	INTEGER PRIMARY KEY,
-    owner_telegram_id INTEGER,
-    isim TEXT NOT NULL,
-    link TEXT NOT NULL,
-    fiyat_takip TEXT NOT NULL, 
-    stok_takip TEXT NOT NULL,
-    fiyat REAL NOT NULL,
-    stok TEXT NOT NULL,
-    son_kontrol_zamani REAL NOT NULL,
-    created_at REAL NOT NULL
-);"""
-
-CREATETABLE_PRICES = """CREATE TABLE IF NOT EXISTS prices (
-    id INTEGER PRIMARY KEY,
-    product_id INTEGER NOT NULL,
-    fiyat REAL NOT NULL,
-    time REAL NOT NULL)
-;"""
 
 
 class Database():
@@ -58,6 +21,7 @@ class Database():
         self.im.execute(CREATETABLE_URLS)
         self.im.execute(CREATETABLE_PRODUCT)
         self.im.execute(CREATETABLE_PRICES)
+        self.im.execute(CREATETABLE_BIRIM)
         self.db.commit()
         self.db.close()
 
@@ -96,6 +60,27 @@ class Database():
         self.im.execute(f"INSERT INTO users ({KEY}) VALUES ({VALUES})")
         self.db.commit()
         self.db.close()
+    
+    def checkDefaultBirim(self):
+        self.db = sql.connect(self.dbLoc)
+        self.im = self.db.cursor()
+        self.im.execute(f"SELECT * FROM birim WHERE id = 1")
+        result = self.im.fetchone()
+        if result == None:
+            self.addDefaultBirim()
+        return True
+    
+    def addDefaultBirim(self):
+        self.db = sql.connect(self.dbLoc)
+        self.im = self.db.cursor()
+        KEY = f"birim,simge"
+        VALUES = f"""
+        ' ',
+        ' '
+        """
+        self.im.execute(f"INSERT INTO birim ({KEY}) VALUES ({VALUES})")
+        self.db.commit()
+        self.db.close()    
         
     def addUserIfNotExists(self,user:User):
         self.db = sql.connect(self.dbLoc)
@@ -193,7 +178,6 @@ class Database():
         self.db.close()
         self.addPrice(product,price)
         
-        
     def getProductWithUser(self, user : User) -> list[Product]:
         self.db = sql.connect(self.dbLoc)
         self.im = self.db.cursor()
@@ -252,6 +236,7 @@ class Database():
         self.db.commit()
         self.im.close()
         self.db.close()
+        
     def updateSonKontrolZamaniProduct(self,product:Product):
         self.db = sql.connect(self.dbLoc)
         self.im = self.db.cursor()
@@ -259,6 +244,7 @@ class Database():
         self.db.commit()
         self.im.close()
         self.db.close()
+        
     def updateIsimProduct(self,product:Product):
         self.db = sql.connect(self.dbLoc)
         self.im = self.db.cursor()

@@ -1,14 +1,13 @@
-
+from math import prod
 from python.Model.Product import Product
 from python.database import Database
-from python.global_variables import TELEGRAM_TOKEN
-
+from python.global_variables import BIRIMLER
+from python.token import *
 from python.py_time import *
 
 import time
 
 from python.commands import  *
-
 
 import requests
 
@@ -63,7 +62,9 @@ class Tracker():
         requests.get(url)
     
     def clearFiyat(self,fiyat:str) -> int:
-        fiyat = float(fiyat.replace("TL", "").replace(".", "").replace(",", "."))
+        for birim in BIRIMLER:
+            fiyat = fiyat.replace(birim,"")
+        fiyat = float(fiyat.replace(".", "").replace(",", "."))
         return fiyat
     
 
@@ -71,10 +72,11 @@ class Tracker():
         with sync_playwright() as p:
             browser = p.chromium.launch()
             page = browser.new_page()
-
-            if (product.get_domain() == SUPPORTED_DOMAIN[0]): # amazon.com.tr
+            domain = product.get_domain()
+            if (domain == SUPPORTED_DOMAIN[0] or domain == SUPPORTED_DOMAIN[1]): # amazon.com.tr, amazon.com
                 if (product.get_isim() == "TODO"):
                     self.getNameFromAmazon(page, product)
+                
                 
                 self.getPriceAndStockFromAmazon(page, product)
                 
@@ -112,11 +114,16 @@ class Tracker():
         product.set_isim(productTitle)
         myDb.updateIsimProduct(product)
         return productTitle
-      
+
+    def getBirimFromText(self,fiyat:str):
+        pass
+    
     def getPriceAndStockFromAmazon(self, page :Page, product : Product) -> None:
             page.goto(product.get_link()) # amazon.com.tr ürünün linkini açar
             corePrice_element = page.query_selector("div[id^='corePrice_']")
             fiyat = corePrice_element.query_selector('span[class="a-offscreen"]').inner_text()
+            if (product.get_birim_id() == 1):
+                self.getBirimFromText(fiyat)
             fiyat = self.clearFiyat(fiyat=fiyat)
             product.set_son_kontrol_zamani(time.time())
             

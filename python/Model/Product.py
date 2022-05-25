@@ -1,4 +1,3 @@
-
 from urllib.parse import urlparse
 
 class Product:
@@ -13,7 +12,9 @@ class Product:
     stok:bool=None, #stok durumu
     son_kontrol_zamani:float=None, #son kontrol zamanı
     created_at:float=None, #oluşturulma zamanı
+    birim_id:int=None, #birim id
     ) -> None:
+        
         self.__id = id
         self.__owner_telegram_id = owner_telegram_id
         self.__isim = isim
@@ -24,8 +25,9 @@ class Product:
         self.__stok = int(stok)
         self.__son_kontrol_zamani = son_kontrol_zamani
         self.__created_at = created_at
-
+        self.__birim_id = birim_id
         
+
     def get_id(self):
         return self.__id 
     def get_owner_telegram_id(self):
@@ -63,9 +65,10 @@ class Product:
             return "Price"
         else:
             return "Stock"
-    
     def get_domain(self):
         return ".".join(urlparse(self.get_link()).netloc.split('.')[0:])
+    def get_birim_id(self) -> int:
+        return self.__birim_id
         
 
     def set_id(self,id):
@@ -88,6 +91,8 @@ class Product:
         self.__son_kontrol_zamani = son_kontrol_zamani
     def set_created_at(self,created_at):
         self.__created_at = created_at
+    def set_birim_id(self,birim_id : int):
+        self.__birim_id = birim_id
         
         
     def __str__(self) -> str:
