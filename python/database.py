@@ -245,13 +245,6 @@ class Database():
         self.db.close()
         return productList    
     
-    # def updatePriceFromProduct(self, product:Product):
-    #     self.db = sql.connect(self.dbLoc)
-    #     self.im = self.db.cursor()
-    #     self.im.execute(f"UPDATE products SET fiyat = '{product.get_fiyat()}' WHERE id = '{product.get_id()}'")
-    #     self.db.commit()
-    #     self.im.close()
-    #     self.db.close()
     def updatePriceAndStokFromProduct(self, product:Product):
         self.db = sql.connect(self.dbLoc)
         self.im = self.db.cursor()

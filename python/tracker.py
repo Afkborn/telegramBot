@@ -67,7 +67,6 @@ class Tracker():
         return fiyat
     
 
-    
     def trackProduct(self, product : Product) -> None:
         with sync_playwright() as p:
             browser = p.chromium.launch()
@@ -76,8 +75,9 @@ class Tracker():
             if (product.get_domain() == SUPPORTED_DOMAIN[0]): # amazon.com.tr
                 if (product.get_isim() == "TODO"):
                     self.getNameFromAmazon(page, product)
-                    
+                
                 self.getPriceAndStockFromAmazon(page, product)
+                
             else:
                 print("Bu ürünün kontrolü henüz desteklenmiyor.")
                 self.sendMessage(product.get_owner_telegram_id(),f"{product.get_domain()} bu domain desteklenmiyor.")

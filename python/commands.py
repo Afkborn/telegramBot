@@ -24,7 +24,14 @@ def printLog(update: Update, functionName: str):
 
 async def start(update: Update, context: CallbackContext.DEFAULT_TYPE):
     if myDb.getUserWithTelegramID(update.message.from_user.id) == None:
-        user = User(telegram_id=update.message.from_user.id, is_bot=update.message.from_user.is_bot, username=update.message.from_user.username, first_name=update.message.from_user.first_name, last_name=update.message.from_user.last_name, language_code=update.message.from_user.language_code, created_at=time.time())
+        user = User(telegram_id=update.message.from_user.id,
+                    is_bot=update.message.from_user.is_bot,
+                    username=update.message.from_user.username,
+                    first_name=update.message.from_user.first_name,
+                    last_name=update.message.from_user.last_name,
+                    language_code=update.message.from_user.language_code,
+                    created_at=time.time()
+                    )
         myDb.addUser(user)
         logging.info(f"UID: {update.message.from_user.id} | created user, name: {user.get_username()}.")
         print(f" {get_time_command()} UID: {update.message.from_user.id} | created user, name: {user.get_username()}.")
@@ -40,12 +47,10 @@ async def help(update: Update, context: CallbackContext.DEFAULT_TYPE):
         text=f"track -> TEXT\nmyproducts -> TEXT\n "
     )
 
-
-
 async def callback_handler(update : Update, context : CallbackContext.DEFAULT_TYPE):
     query = update.callback_query
     process , *_ = query.data.split(",")
-    
+    print(process)
     if process == "track":
         _, type, urlID, ownerID = query.data.split(",")
         #delete previous message
@@ -61,9 +66,17 @@ async def callback_handler(update : Update, context : CallbackContext.DEFAULT_TY
             productStokTakip = True
             productFiyatTakip = True 
         
-        productIsim = "TODO" #TODO İSİM AYARLA
-        
-        myProduct = Product(owner_telegram_id=int(ownerID), isim=productIsim, link=productLink, fiyat_takip=productFiyatTakip, stok_takip=productStokTakip, created_at=time.time(), fiyat=0,stok=0,son_kontrol_zamani=0)
+        productIsim = "TODO"
+        myProduct = Product(owner_telegram_id=int(ownerID),
+                            isim=productIsim,
+                            link=productLink,
+                            fiyat_takip=productFiyatTakip,
+                            stok_takip=productStokTakip,
+                            created_at=time.time(),
+                            fiyat=0,
+                            stok=0,
+                            son_kontrol_zamani=0
+                            )
         logging.info(f"{ownerID} | created product.")
         if myProduct.get_domain() in SUPPORTED_DOMAIN:
             myDb.addProduct(myProduct)
@@ -82,7 +95,8 @@ async def callback_handler(update : Update, context : CallbackContext.DEFAULT_TY
         myProduct = myDb.getProductWithProductID(productID)
         buttons = [
             [InlineKeyboardButton(text="Untrack", callback_data = f"untrack,{productID},{ownerID}")],
-            [InlineKeyboardButton(text="Open", url =f"{myProduct.get_link()}")]
+            [InlineKeyboardButton(text="Open", url =f"{myProduct.get_link()}")],
+            [InlineKeyboardButton(text="Close", callback_data = f"closeProduct")]
         ]
         keyboard = InlineKeyboardMarkup(buttons)
         if (myProduct.get_isim() == "TODO"):
@@ -101,10 +115,12 @@ async def callback_handler(update : Update, context : CallbackContext.DEFAULT_TY
             await context.bot.send_message(chat_id=update.effective_chat.id, text="You are no longer following this product, you will not be notified when it changes.\nYou can check your products with /myproducts")
         else:
             await context.bot.send_message(chat_id=update.effective_chat.id, text="Error")
-    
+            
+    elif process == "closeProduct":
+        await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
+        
     else:
         print(process)
-
 
 async def myproducts(update: Update, context: CallbackContext.DEFAULT_TYPE):
     printLog(update, "myproducts")
@@ -130,6 +146,7 @@ async def myproducts(update: Update, context: CallbackContext.DEFAULT_TYPE):
             buttons.append(
                 [InlineKeyboardButton(text=isim, callback_data = f"myproducts,{type},{product.get_id()},{update.message.from_user.id}")]
             )
+            
         keyboard = InlineKeyboardMarkup(buttons)
         await context.bot.send_message(chat_id=update.effective_chat.id, text="Choose a product to track", reply_markup = keyboard)
         
@@ -144,10 +161,6 @@ async def track(update: Update, context: CallbackContext.DEFAULT_TYPE):
         if (len(url) <= 6) or not ( url.startswith("http://") or url.startswith("https://")):
             await context.bot.send_message(chat_id=update.effective_chat.id, text="You need to provide URL")    
         else:
-            
-            #get product name
-            
-            
             urlIndex = myDb.addUrl(url)
             buttons = [
                     [InlineKeyboardButton(text = "Stock", callback_data = f"track,stock,{urlIndex},{update.message.from_user.id}")],

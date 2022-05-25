@@ -72,6 +72,8 @@ if __name__  == "__main__":
         logging.info("Start polling")
         print(f" {get_time_command()} | Running...")
         application.run_polling(stop_signals=None)
+    else:
+        print(f" {get_time_command()} | Compatibility check failed, check log file.")
     
         
         

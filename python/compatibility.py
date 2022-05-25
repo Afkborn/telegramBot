@@ -1,4 +1,5 @@
 
+from matplotlib.patches import FancyArrow
 from .global_variables import *
 from os import path, makedirs
 
@@ -19,6 +20,14 @@ def checkCompatibility():
         print("Telegram Library is not installed. Please install it.")
         logging.error("Telegram Library is not installed. Please install it.")
         return False
+    
+    try:
+        import playwright
+    except ImportError:
+        print("playwright Library is not installed. Please install it.")
+        logging.error("playwright Library is not installed. Please install it.")
+        return False
+    
     createFolder()
     return True
         
