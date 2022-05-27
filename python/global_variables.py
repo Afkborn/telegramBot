@@ -7,7 +7,7 @@ FOLDERS_NAME = ["log","db"]
 
 SUPPORTED_DOMAIN = ['www.amazon.com.tr','www.amazon.com']
 
-BIRIMLER = ['$','TL', "PLN"]
+BIRIMLER = ['$','TL', "PLN",'€']
 
 CREATETABLE_USERS = f"""CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

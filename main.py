@@ -10,6 +10,8 @@ import logging
 from telegram.ext import ApplicationBuilder, CommandHandler, filters, MessageHandler, CallbackQueryHandler
 
 from threading import Thread
+
+
 try:
     from python.token import *
 except ImportError:
@@ -38,7 +40,7 @@ if __name__  == "__main__":
         application.add_handler(start_handler)
         logging.info("Add start handler")
 
-        
+
         help_handler = CommandHandler('help', cmd.help) # /help
         application.add_handler(help_handler)
         logging.info("Add help handler")
@@ -54,14 +56,12 @@ if __name__  == "__main__":
         application.add_handler(myproducts_handler)
         logging.info("Add myproducts handler")
         
-
-
-        echo_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), cmd.echo)
+        echo_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), cmd.echoMessage)
         application.add_handler(echo_handler)
         logging.info("Add echo handler")
 
         
-        unknown_handler = MessageHandler(filters.COMMAND, cmd.unknown)
+        unknown_handler = MessageHandler(filters.COMMAND, cmd.unknownCommand)
         application.add_handler(unknown_handler)
         logging.info("Add unknown handler")
         

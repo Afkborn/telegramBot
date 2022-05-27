@@ -82,17 +82,14 @@ class Tracker():
         with sync_playwright() as p:
             browser = p.chromium.launch()
             page = browser.new_page()
+            
             domain = product.get_domain()
             if (domain == SUPPORTED_DOMAIN[0] or domain == SUPPORTED_DOMAIN[1]): # amazon.com.tr, amazon.com
+                
                 if (product.get_isim() == "TODO"):
                     self.getNameFromAmazon(page, product)
-                
-                
                 self.getPriceAndStockFromAmazon(page, product)
-                
-            else:
-                print("Bu ürünün kontrolü henüz desteklenmiyor.")
-                self.sendMessage(product.get_owner_telegram_id(),f"{product.get_domain()} bu domain desteklenmiyor.")
+            
             browser.close()
     
     def setTracker(self):
@@ -128,7 +125,6 @@ class Tracker():
     def getBirimFromText(self,fiyat:str):
         for simge in BIRIMLER:
             if simge in fiyat:
-                print(f" {get_time_command()} | Birim bulundu: {simge}")
                 result = myDb.getBirimFromSimge(simge)
                 if (result == None):
                     birimID = myDb.addBirim(birim="TODO", simge=simge)
@@ -140,13 +136,16 @@ class Tracker():
         
     
     def getPriceAndStockFromAmazon(self, page :Page, product : Product) -> None:
-            page.goto(product.get_link()) # amazon.com.tr ürünün linkini açar
+            page.goto(product.get_link()) 
+            
             corePrice_element = page.query_selector("div[id^='corePrice_']")
             fiyat = corePrice_element.query_selector('span[class="a-offscreen"]').inner_text()
+            
             if (product.get_birim_id() == 1):
                 productBirim = self.getBirimFromText(fiyat)
                 product.set_birim_id(productBirim)
                 myDb.updateBirimIDProduct(product)
+                
             fiyat = self.clearFiyat(fiyat=fiyat)
             product.set_son_kontrol_zamani(time.time())
             

@@ -155,21 +155,6 @@ class Database():
         self.db.close()
         return user
     
-    def getAllTelegramID(self) -> int:
-        self.db = sql.connect(self.dbLoc)
-        self.im = self.db.cursor()
-        self.im.execute("SELECT telegram_id FROM users")
-        result = self.im.fetchall()
-        self.db.close()
-        return result
-           
-    def getUserCount(self) -> int:
-        self.db = sql.connect(self.dbLoc)
-        self.im = self.db.cursor()
-        self.im.execute("SELECT COUNT(*) FROM users")
-        result = self.im.fetchone()
-        self.db.close()
-        return result[0]
     
     def addProduct(self, product:Product):
         self.db = sql.connect(self.dbLoc)

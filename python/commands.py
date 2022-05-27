@@ -21,6 +21,9 @@ def printLog(update: Update, functionName: str):
     
 
 async def start(update: Update, context: CallbackContext.DEFAULT_TYPE):
+    
+    
+    
     if myDb.getUserWithTelegramID(update.message.from_user.id) == None:
         user = User(telegram_id=update.message.from_user.id,
                     is_bot=update.message.from_user.is_bot,
@@ -47,11 +50,12 @@ async def help(update: Update, context: CallbackContext.DEFAULT_TYPE):
 
 async def callback_handler(update : Update, context : CallbackContext.DEFAULT_TYPE):
     query = update.callback_query
-    process , *_ = query.data.split(",")
+    process , *_ = query.data.split(",") # TRACK
     if process == "track":
         _, type, urlID, ownerID = query.data.split(",")
         #delete previous message
         await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
+        
         productLink = myDb.getUrlIndex(urlID)
         if (type =="stock"):
             productStokTakip = True
@@ -76,6 +80,7 @@ async def callback_handler(update : Update, context : CallbackContext.DEFAULT_TY
                             birim_id=1,
                             )
         logging.info(f"{ownerID} | created product.")
+        
         if myProduct.get_domain() in SUPPORTED_DOMAIN:
             myDb.addProduct(myProduct)
             logging.info(f"{ownerID} | added product to database")
@@ -89,6 +94,7 @@ async def callback_handler(update : Update, context : CallbackContext.DEFAULT_TY
     elif process == "myproducts":
         #delete previous message
         await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
+        
         _, type, productID, ownerID = query.data.split(",")
         myProduct = myDb.getProductWithProductID(productID)
         buttons = [
@@ -132,38 +138,44 @@ async def myproducts(update: Update, context: CallbackContext.DEFAULT_TYPE):
     else:
         products = myDb.getProductWithUser(user)
         buttons = []
-        for product in products:
-            if (product.get_fiyat_takip() and product.get_stok_takip()):
-                type = "all"
-            elif (product.get_fiyat_takip()):
-                type = "price"
-            else:
-                type = "stock"
+        if (len(products) == 0):
+            await context.bot.send_message(chat_id=update.effective_chat.id, text="You are not following any product. Please, type /track")
+        else:
+            for product in products:
+                if (product.get_fiyat_takip() and product.get_stok_takip()):
+                    type = "all"
+                elif (product.get_fiyat_takip()):
+                    type = "price"
+                else:
+                    type = "stock"
+                    
+                if (product.get_isim() == "TODO"):
+                    isim = "Getting name, please wait..."
+                else:
+                    isim = product.get_isim()
+                    
+                buttons.append(
+                    [InlineKeyboardButton(text=isim, callback_data = f"myproducts,{type},{product.get_id()},{update.message.from_user.id}")]
+                )
                 
-            if (product.get_isim() == "TODO"):
-                isim = "Getting name, please wait..."
-            else:
-                isim = product.get_isim()
-                
-            buttons.append(
-                [InlineKeyboardButton(text=isim, callback_data = f"myproducts,{type},{product.get_id()},{update.message.from_user.id}")]
-            )
-            
-        keyboard = InlineKeyboardMarkup(buttons)
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="Choose a product to track", reply_markup = keyboard)
+            keyboard = InlineKeyboardMarkup(buttons)
+            await context.bot.send_message(chat_id=update.effective_chat.id, text="Choose a product to track", reply_markup = keyboard)
         
 
 async def track(update: Update, context: CallbackContext.DEFAULT_TYPE):
     printLog(update, "track")
+    
     user = myDb.getUserWithTelegramID(update.message.from_user.id)
     if  user == None:
         await context.bot.send_message(chat_id=update.effective_chat.id, text="You are not registered. Please, type /start")
     else:
-        url = (update.message.text).replace("/track ","")
-        if (len(url) <= 6) or not ( url.startswith("http://") or url.startswith("https://")):
+        url = (update.message.text).replace("/track ","") # just URL
+        if (len(url) <= 6) or not ( url.startswith("http://") or url.startswith("https://")):  # check if URL is valid
             await context.bot.send_message(chat_id=update.effective_chat.id, text="You need to provide URL")    
         else:
-            urlIndex = myDb.addUrl(url)
+            #https://www.amazon.com.tr/manyetik-Phillips-Security-Pentalobe-Tri-Point/dp/B0189YWOIO/?_encoding=UTF8&pd_rd_w=ua3MV&pf_rd_p=a05c0273-b826-4efe-ba61-63c1fc2e261a&pf_rd_r=S6RTZY937SPQQJSRQPCQ&pd_rd_r=94a32f9f-95d3-4f7b-8872-0a43cf72d8ce&pd_rd_wg=zrJe8&ref_=pd_gw_cr_wsim
+            # 1
+            urlIndex = myDb.addUrl(url) 
             buttons = [
                     [InlineKeyboardButton(text = "Stock", callback_data = f"track,stock,{urlIndex},{update.message.from_user.id}")],
                     [InlineKeyboardButton(text = "Price", callback_data = f"track,price,{urlIndex},{update.message.from_user.id}")],
@@ -173,11 +185,11 @@ async def track(update: Update, context: CallbackContext.DEFAULT_TYPE):
             await context.bot.send_message(chat_id= update.effective_chat.id,text = 'What would you like to follow?', reply_markup = keyboard)
                                 
 
-async def echo(update: Update, context: CallbackContext.DEFAULT_TYPE):
+async def echoMessage(update: Update, context: CallbackContext.DEFAULT_TYPE):
     print(f" {get_time_command()} - ID:{update.message.from_user.id} | {update.message.text}")    
     # await context.bot.send_message(chat_id=update.effective_chat.id, text=update.message.text)
     
-async def unknown(update: Update, context: CallbackContext.DEFAULT_TYPE):
+async def unknownCommand(update: Update, context: CallbackContext.DEFAULT_TYPE):
     print(f" {get_time_command()} - ID:{update.message.from_user.id} | COMMAND ERROR {update.message.text}")
     logging.error(f"COMMAND ERROR | ID:{update.message.from_user.id} | {update.message.text}")
     
