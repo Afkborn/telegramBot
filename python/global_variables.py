@@ -7,6 +7,9 @@ FOLDERS_NAME = ["log","db"]
 
 SUPPORTED_DOMAIN = ['www.amazon.com.tr','www.amazon.com']
 
+AVAIBLE_COMMANDS = ["start","help","track","myproducts"]
+
+
 BIRIMLER = ['$','TL', "PLN",'€']
 
 CREATETABLE_USERS = f"""CREATE TABLE IF NOT EXISTS users (

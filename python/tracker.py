@@ -1,4 +1,5 @@
 
+from math import prod
 from python.Model.Product import Product
 from python.database import Database
 from python.global_variables import BIRIMLER
@@ -15,7 +16,7 @@ from playwright.sync_api import Page
 from playwright.sync_api import sync_playwright
 
 class Tracker():
-    # Kontrol edilmesi gereken ürünleri bulur, onların kontrolünü sağlar
+    
     
     productList : Product = list() # list of products
     productToFollow : Product = list() #list of products to check
@@ -92,6 +93,7 @@ class Tracker():
             
             browser.close()
     
+    
     def setTracker(self):
         self.getControlSleepTime()
         while True:
@@ -130,40 +132,66 @@ class Tracker():
                     birimID = myDb.addBirim(birim="TODO", simge=simge)
                     return birimID
                 else:
-                    idDb, birimDb, simgeDb = result
+                    idDb, *_ = result
                     return idDb
+        return 1
                 
-        
+    def getBirimFromProduct(self, product : Product) -> str:
+        if (product.get_birim_id() == 1):
+            birim = ""
+        else:
+            birim = myDb.getSimgeFromID(product.get_birim_id())
+        return birim
     
     def getPriceAndStockFromAmazon(self, page :Page, product : Product) -> None:
             page.goto(product.get_link()) 
             
             corePrice_element = page.query_selector("div[id^='corePrice_']")
-            fiyat = corePrice_element.query_selector('span[class="a-offscreen"]').inner_text()
-            
-            if (product.get_birim_id() == 1):
-                productBirim = self.getBirimFromText(fiyat)
-                product.set_birim_id(productBirim)
-                myDb.updateBirimIDProduct(product)
-                
-            fiyat = self.clearFiyat(fiyat=fiyat)
-            product.set_son_kontrol_zamani(time.time())
-            
-            product.set_stok(True) #TODO DÜZELT.
-            
-            
-            if (product.get_fiyat() != fiyat):
-                product.set_fiyat(fiyat)
+            try:
+                fiyat = corePrice_element.query_selector('span[class="a-offscreen"]').inner_text()
+                stok = 1
+            except:
+                fiyat = "0.0"
+                stok = 0
+            finally:
                 if (product.get_birim_id() == 1):
-                    birim = ""
+                    productBirim = self.getBirimFromText(fiyat)
+                    product.set_birim_id(productBirim)
+                    myDb.updateBirimIDProduct(product)
+                    
+                fiyat = self.clearFiyat(fiyat=fiyat)
+                product.set_son_kontrol_zamani(time.time())
+                
+                if (product.get_fiyat_takip() and product.get_stok_takip()):
+                    if (product.get_fiyat() != fiyat or product.get_stok() != stok):
+                        product.set_fiyat(fiyat)
+                        product.set_stok(stok)
+                        if (product.get_stok() == 0):
+                            stokDurum = "Stokta yok"
+                        else:
+                            stokDurum = "Stokta var"
+                        birim = self.getBirimFromProduct(product)
+                        self.sendMessage(product.get_owner_telegram_id(), f"{product.get_isim()} ürününün fiyatı değişti, yeni fiyat: {product.get_fiyat()}{birim}, stok durumu: {stokDurum}")
+                        
+                elif (product.get_fiyat_takip()):
+                    if (product.get_fiyat() != fiyat):
+                        product.set_fiyat(fiyat)
+                        
+                        birim = self.getBirimFromProduct(product)
+                            
+                        self.sendMessage(product.get_owner_telegram_id(), f"{product.get_isim()} ürününün fiyatı değişti, yeni fiyat: {product.get_fiyat()}{birim}")
                 else:
-                    birim = myDb.getSimgeFromID(product.get_birim_id())
-                self.sendMessage(product.get_owner_telegram_id(), f"{product.get_isim()} ürününün fiyatı değişti, yeni fiyat: {product.get_fiyat()}{birim}")
-                print(f" {get_time_command()} | {product.get_isim()} ürününün fiyatı değişti, yeni fiyat: {product.get_fiyat()}{birim}")
+                    if (product.get_stok() != stok):
+                        product.set_stok(stok)
+                        if (product.get_stok() == 0):
+                            stokDurum = "Stokta yok"
+                        else:
+                            stokDurum = "Stokta var"
+                        self.sendMessage(product.get_owner_telegram_id(), f"{product.get_isim()} ürününün stok durumu değişti: {stokDurum}")
+                        
                 myDb.addPrice(product)
                 myDb.updatePriceAndStokFromProduct(product)
-            else:
-                print(f" {get_time_command()} | ID: {product.get_id()} {product.get_isim()} ürününün fiyatı değişmedi.")
-                logging.info(f" ID: {product.get_id()} {product.get_isim()} ürününün fiyatı değişmedi.")
+                myDb.updateSonKontrolZamaniProduct(product)
+                print(f" {get_time_command()} | ID: {product.get_id()} {product.get_isim()} ürünü için takip başarılı!")
+                logging.info(f" ID: {product.get_id()} {product.get_isim()} ürünü için takip başarılı!")      
                 
-            myDb.updateSonKontrolZamaniProduct(product)

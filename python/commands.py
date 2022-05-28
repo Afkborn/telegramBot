@@ -1,12 +1,13 @@
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackContext
-from python.global_variables import SUPPORTED_DOMAIN
+from python.global_variables import AVAIBLE_COMMANDS, SUPPORTED_DOMAIN
 from .py_time import *
 from python.Model.User import User
 from python.Model.Product  import Product
 from python.database import Database
 from python.py_time import *
+
 from python.token import *
 import time
 import logging 
@@ -86,11 +87,16 @@ async def callback_handler(update : Update, context : CallbackContext.DEFAULT_TY
             logging.info(f"{ownerID} | added product to database")
             print(f" {get_time_command()} UID: {ownerID} | added product.")
             await context.bot.send_message(chat_id=update.effective_chat.id, text="You are now following this product, you will be notified when it changes.\nYou can check your products with /myproducts")
+            
+            
         else:
             print(f" {get_time_command()} UID: {ownerID} | product domain is not supported, domain: {myProduct.get_domain()}")
             logging.info(f"{ownerID} | product domain is not supported, domain: {myProduct.get_domain()}")
             await context.bot.send_message(chat_id=update.effective_chat.id, text="This domain is not supported, please try another one.")
-            
+
+        
+        
+        
     elif process == "myproducts":
         #delete previous message
         await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
@@ -111,7 +117,14 @@ async def callback_handler(update : Update, context : CallbackContext.DEFAULT_TY
             birim = ""
         else:
             birim = myDb.getSimgeFromID(myProduct.get_birim_id())
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Product Name: {isim}\nPrice: {myProduct.get_fiyat()} {birim}, Stock: {myProduct.get_stok_string()}, Tracking type: {myProduct.get_type()}", reply_markup = keyboard)
+    
+        if (myProduct.get_fiyat_takip() and myProduct.get_stok_takip()):
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Product Name: {isim}\nPrice: {myProduct.get_fiyat()} {birim}, Stock: {myProduct.get_stok_string()}", reply_markup = keyboard)
+        elif (myProduct.get_fiyat_takip()):
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Product Name: {isim}\nPrice: {myProduct.get_fiyat()} {birim}", reply_markup = keyboard)
+        else:
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Product Name: {isim}\nStock: {myProduct.get_stok_string()}", reply_markup = keyboard)
+        
         
     elif process == "untrack":
         #delete previous message
@@ -187,6 +200,16 @@ async def track(update: Update, context: CallbackContext.DEFAULT_TYPE):
 
 async def echoMessage(update: Update, context: CallbackContext.DEFAULT_TYPE):
     print(f" {get_time_command()} - ID:{update.message.from_user.id} | {update.message.text}")    
+    isAvaible = False
+    slashCheck = False
+    for commands in AVAIBLE_COMMANDS:
+        if not commands in update.message.text:
+            isAvaible = True
+        elif commands  == update.message.text:
+            slashCheck = True
+            await context.bot.send_message(chat_id=update.effective_chat.id, text="'/' yazmayı unutmuş olabilir misin? 😉")      
+    if (isAvaible and not slashCheck):
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="Böyle bir komut bulunamadı.")      
     # await context.bot.send_message(chat_id=update.effective_chat.id, text=update.message.text)
     
 async def unknownCommand(update: Update, context: CallbackContext.DEFAULT_TYPE):
